@@ -2,7 +2,3 @@ default:
   css:
     component:
       css/synimage.css: {}
-colorbox:
-  css:
-    component:
-      css/synimage.css: {}
