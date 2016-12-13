@@ -1,0 +1,21 @@
+synimage.render:
+  path: '/synimage/render/{fid}/{image_style}'
+  defaults:
+    _controller: '\Drupal\synimage\Controller\ImageSynbox::render'
+  requirements:
+    _permission: 'access content'
+synimage.render_original:
+  path: '/synimage/render/{fid}'
+  defaults:
+    _controller: '\Drupal\synimage\Controller\ImageSynbox::render'
+  requirements:
+    _permission: 'access content'
+synimage.dialog:
+  path: '/synimage/dialog/image/{filter_format}'
+  defaults:
+    _form: '\Drupal\synimage\Form\EditorImageSynboxDialog'
+    _title: 'Upload image'
+  options:
+    _theme: ajax_base_page
+  requirements:
+    _entity_access: 'filter_format.use'
