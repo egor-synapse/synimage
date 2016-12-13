@@ -1,15 +1,3 @@
-synimage.render:
-  path: '/synimage/render/{fid}/{image_style}'
-  defaults:
-    _controller: '\Drupal\synimage\Controller\ImageSynbox::render'
-  requirements:
-    _permission: 'access content'
-synimage.render_original:
-  path: '/synimage/render/{fid}'
-  defaults:
-    _controller: '\Drupal\synimage\Controller\ImageSynbox::render'
-  requirements:
-    _permission: 'access content'
 synimage.dialog:
   path: '/synimage/dialog/image/{filter_format}'
   defaults:
