@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\editor\Plugin\Filter;
+namespace Drupal\synimage\Plugin\Filter;
 
 use Drupal\Component\Utility\Html;
 use Drupal\Core\Entity\EntityManagerInterface;
@@ -8,6 +8,7 @@ use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\filter\FilterProcessResult;
 use Drupal\filter\Plugin\FilterBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\synimage\Controller\ImageRenderer;
 
 /**
  * Provides a filter to track images uploaded via a Text Editor.
@@ -15,13 +16,13 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * Generates file URLs and associates the cache tags of referenced files.
  *
  * @Filter(
- *   id = "editor_file_reference",
- *   title = @Translation("Track images uploaded via a Text Editor"),
- *   description = @Translation("Ensures that the latest versions of images uploaded via a Text Editor are displayed."),
+ *   id = "image_reference",
+ *   title = @Translation("Image References"),
+ *   description = @Translation("Fix. Отслеживать изображения, загруженные через Текстовый редактор"),
  *   type = Drupal\filter\Plugin\FilterInterface::TYPE_TRANSFORM_REVERSIBLE
  * )
  */
-class EditorFileReference extends FilterBase implements ContainerFactoryPluginInterface {
+class ImageReference extends FilterBase implements ContainerFactoryPluginInterface {
 
   /**
    * An entity manager object.
@@ -65,19 +66,22 @@ class EditorFileReference extends FilterBase implements ContainerFactoryPluginIn
   public function process($text, $langcode) {
     $result = new FilterProcessResult($text);
 
-    if (stristr($text, 'data-entity-type="file"') !== FALSE) {
+    if (stristr($text, 'data-synimage="') !== FALSE) {
       $dom = Html::load($text);
       $xpath = new \DOMXPath($dom);
       $processed_uuids = array();
       foreach ($xpath->query('//*[@data-entity-type="file" and @data-entity-uuid]') as $node) {
         $uuid = $node->getAttribute('data-entity-uuid');
-
+        $synimage_string = $node->getAttribute('data-synimage');
+        $synimage = ImageRenderer::decodeSynimage($synimage_string);
+        $style = $synimage['style'];
         // If there is a 'src' attribute, set it to the file entity's current
         // URL. This ensures the URL works even after the file location changes.
         if ($node->hasAttribute('src')) {
           $file = $this->entityManager->loadEntityByUuid('file', $uuid);
+          $src = ImageRenderer::styledPath($file->id(), $style);
           if ($file) {
-            $node->setAttribute('src', file_url_transform_relative(file_create_url($file->getFileUri())));
+            $node->setAttribute('src', $src);
           }
         }
 

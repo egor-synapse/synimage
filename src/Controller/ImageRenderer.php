@@ -77,4 +77,24 @@ class ImageRenderer extends ControllerBase {
     return file_url_transform_relative($absolute_path);
   }
 
+  /**
+   * Return Styles.
+   */
+  public static function decodeSynimage($synimage_string) {
+    $synimage = [
+      'caption' => FALSE,
+      'style' => FALSE,
+      'colorbox' => FALSE,
+      'watermark' => FALSE,
+    ];
+    if ($synimage_string) {
+      foreach (explode(';', $synimage_string) as $value) {
+        $k = strstr($value, ':', TRUE);
+        $v = str_replace(':', '', strstr($value, ':'));
+        $synimage[$k] = $v;
+      }
+    }
+    return $synimage;
+  }
+
 }

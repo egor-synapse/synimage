@@ -71,7 +71,11 @@ class EditorImageSynboxDialog extends FormBase {
       $form_state->set('image_element', $image_element);
       $form_state->setCached(TRUE);
 
-      $synimage = $this->decodeSynimage($image_element);
+      $synimage_string = FALSE;
+      if ($image_element['synimage']) {
+        $synimage_string = $image_element['synimage'];
+      }
+      $synimage = ImageRenderer::decodeSynimage($synimage_string);
       $defaults = [
         'fid' => $this->getFid($image_element),
         'src' => $image_element['src'],
@@ -150,11 +154,10 @@ class EditorImageSynboxDialog extends FormBase {
       '#required' => FALSE,
       '#default_value' => $defaults['colorbox'],
     ];
-    if (!$config['watermark']) {
+    if ($config['watermark']) {
       $form['watermark'] = [
         '#type' => 'checkbox',
         '#title' => $this->t('Использовать водяной знак в всплывающем окне?'),
-        '#required' => FALSE,
         '#default_value' => $defaults['watermark'],
       ];
     }
@@ -174,26 +177,6 @@ class EditorImageSynboxDialog extends FormBase {
     ];
 
     return $form;
-  }
-
-  /**
-   * Return Styles.
-   */
-  public function decodeSynimage($image_element) {
-    $synimage = [
-      'caption' => FALSE,
-      'style' => FALSE,
-      'colorbox' => FALSE,
-      'watermark' => FALSE,
-    ];
-    if (isset($image_element['synimage'])) {
-      foreach (explode(';', $image_element['synimage']) as $value) {
-        $k = strstr($value, ':', TRUE);
-        $v = str_replace(':', '', strstr($value, ':'));
-        $synimage[$k] = $v;
-      }
-    }
-    return $synimage;
   }
 
   /**
