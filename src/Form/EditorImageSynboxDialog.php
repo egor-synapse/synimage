@@ -12,7 +12,7 @@ use Drupal\editor\Ajax\EditorDialogSave;
 use Drupal\Core\Ajax\CloseModalDialogCommand;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
-use Drupal\synimage\Controller\ImageSynbox;
+use Drupal\synimage\Controller\ImageRenderer;
 
 /**
  * Provides an image dialog for text editors.
@@ -202,12 +202,17 @@ class EditorImageSynboxDialog extends FormBase {
   public function getEditorSettings($filter_format) {
     $editor = editor_load($filter_format->id());
     $image_upload = $editor->getImageUploadSettings();
+    $max_dimensions = 0;
+    if (!empty($image_upload['max_dimensions']['width']) || !empty($image_upload['max_dimensions']['height'])) {
+      $max_dimensions = $image_upload['max_dimensions']['width'] . 'x' . $image_upload['max_dimensions']['height'];
+    }
+    $max_filesize = min(Bytes::toInt($image_upload['max_size']), file_upload_max_size());
     $settings = [
       'location' => $image_upload['scheme'] . '://' . $image_upload['directory'],
       'validators' => [
         'file_validate_extensions' => ['gif png jpg jpeg'],
-        'file_validate_size' => $this->getFilesize($image_upload),
-        'file_validate_image_resolution' => $this->getDimensions($image_upload),
+        'file_validate_size' => [$max_filesize],
+        'file_validate_image_resolution' => [$max_dimensions],
       ],
     ];
 
@@ -265,25 +270,6 @@ class EditorImageSynboxDialog extends FormBase {
   }
 
   /**
-   * Return Dimensions.
-   */
-  public function getDimensions($image_upload) {
-    $max_dimensions = 0;
-    if (!empty($image_upload['max_dimensions']['width']) || !empty($image_upload['max_dimensions']['height'])) {
-      $max_dimensions = $image_upload['max_dimensions']['width'] . 'x' . $image_upload['max_dimensions']['height'];
-    }
-    return [$max_dimensions];
-  }
-
-  /**
-   * Return Dimensions.
-   */
-  public function getFilesize($image_upload) {
-    $max_filesize = min(Bytes::toInt($image_upload['max_size']), file_upload_max_size());
-    return [$max_filesize];
-  }
-
-  /**
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
@@ -298,22 +284,18 @@ class EditorImageSynboxDialog extends FormBase {
       $file->setPermanent();
       $file->save();
 
-      $style = $form_state->getValue('style');
       $synimage = [
-        'style:' . $style,
+        'style:' . $form_state->getValue('style'),
         'caption:' . $form_state->getValue('caption'),
         'colorbox:' . $form_state->getValue('colorbox'),
         'watermark:' . $form_state->getValue('watermark'),
       ];
 
-      $form_state->setValue('file-src', ImageSynbox::styledPath($fid, $style));
+      $form_state->setValue('file-id', $fid);
       $form_state->setValue('file-uuid', $file->uuid());
       $form_state->setValue('synimage', implode(';', $synimage));
 
-      $image = $this->renderImage($form_state);
-      if ($form_state->getValue('colorbox')) {
-        $image = $this->renderColorbox($form_state, $fid, $image);
-      }
+      $image = ImageRenderer::render($form_state);
       $form_state->setValue('image_render', $image);
     }
 
@@ -330,41 +312,6 @@ class EditorImageSynboxDialog extends FormBase {
       $response->addCommand(new CloseModalDialogCommand());
     }
     return $response;
-  }
-
-  /**
-   * Plain Image.
-   */
-  public function renderImage($form_state) {
-    $synimage = $form_state->getValue('synimage');
-    $img = '<img ';
-    $img .= ' alt=\'' . $form_state->getValue('alt') . '\'';
-    $img .= ' src="' . $form_state->getValue('file-src') . '"';
-    $img .= ' class="synimage text-xs-' . $form_state->getValue('align') . '"';
-    $img .= ' data-align="' . $form_state->getValue('align') . '"';
-    // Js: $img .= ' data-caption="' . $form_state->getValue('caption') . '"';!
-    $img .= ' data-synimage="' . $form_state->getValue('synimage') . '"';
-    $img .= ' data-entity-uuid="' . $form_state->getValue('file-uuid') . '"';
-    $img .= ' data-entity-type="file"';
-    $img .= ' />';
-    $img = '<span>' . $img . '</span>';
-    return $img;
-  }
-
-  /**
-   * Colorbox.
-   */
-  public function renderColorbox($form_state, $fid, $image) {
-    $href = ImageSynbox::styledPath($fid, 'full');
-    if ($form_state->getValue('watermark') && FALSE) {
-      $href = ImageSynbox::styledPath($fid, 'watermark');
-    }
-
-    $img = '<a ';
-    $img .= ' href="' . $href . '"';
-    $img .= ' class="syncolorbox colorbox"';
-    $img .= ' >' . $image . '</a>';
-    return $img;
   }
 
 }
