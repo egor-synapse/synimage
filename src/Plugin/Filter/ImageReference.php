@@ -95,6 +95,27 @@ class ImageReference extends FilterBase implements ContainerFactoryPluginInterfa
           }
         }
       }
+      foreach ($xpath->query('//*[@data-uuid]') as $node) {
+        $uuid = $node->getAttribute('data-uuid');
+        $style = $node->getAttribute('data-colorbox');
+        if ($node->hasAttribute('href')) {
+          $file = $this->entityManager->loadEntityByUuid('file', $uuid);
+          $src = ImageRenderer::styledPath($file->id(), $style);
+          if ($file) {
+            $node->setAttribute('href', $src);
+          }
+        }
+
+        // Only process the first occurrence of each file UUID.
+        if (!isset($processed_uuids[$uuid])) {
+          $processed_uuids[$uuid] = TRUE;
+
+          $file = $this->entityManager->loadEntityByUuid('file', $uuid);
+          if ($file) {
+            $result->addCacheTags($file->getCacheTags());
+          }
+        }
+      }
       $result->setProcessedText(Html::serialize($dom));
     }
 

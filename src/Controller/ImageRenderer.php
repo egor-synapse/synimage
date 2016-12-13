@@ -46,13 +46,15 @@ class ImageRenderer extends ControllerBase {
    */
   public static function colorbox($form_state, $image) {
     $fid = $form_state->getValue('file-id');
-    $href = self::styledPath($fid, 'full');
-    if ($form_state->getValue('watermark') && FALSE) {
-      $href = self::styledPath($fid, 'watermark');
+    $style = 'full';
+    if ($form_state->getValue('watermark')) {
+      $style = 'watermark';
     }
 
     $img = '<a ';
-    $img .= ' href="' . $href . '"';
+    $img .= ' href="' . self::styledPath($fid, $style) . '"';
+    $img .= ' data-colorbox="' . $style . '"';
+    $img .= ' data-uuid="' . $form_state->getValue('file-uuid') . '"';
     $img .= ' class="syncolorbox colorbox"';
     $img .= ' >' . $image . '</a>';
     return $img;
